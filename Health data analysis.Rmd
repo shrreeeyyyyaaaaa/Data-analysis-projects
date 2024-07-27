@@ -1,0 +1,217 @@
+---
+title: "20MIA1172_LAB7_LR"
+author: "shreya"
+date: "2023-09-29"
+output: word_document
+---
+
+```{r}
+library(readr)
+
+#linear regression 
+#load data set 
+data<-read.csv("insurance.csv")
+
+#Data pre-processing
+#shape of data 
+shape<-dim(data)
+shape
+
+# View the structure of the dataset
+str(data) 
+# Get summary statistics for each colum
+summary(data)    
+
+
+#head and tail of data 
+head(data)
+tail(data)
+
+#missing vaules 
+#checking for null
+#cleaning of data 
+any(is.na(data))
+#to check total number of null vaules 
+sum(is.na(data))
+print("No missing vaules or Null vaules")
+
+#descriptive analysis 
+# Age
+# Summary statistics for age
+summary(data$age)  
+# Histogram of age
+hist(data$age) 
+print(" Frequency of 20 aged people is more")
+
+# Sex
+# Frequency count for sex
+table(data$sex)
+print("In the data Male has more count ")
+# Bar plot of sex
+barplot(table(data$sex))  
+
+# BMI
+# Summary statistics for bmi
+summary(data$bmi)
+# Boxplot of bmi
+boxplot(data$bmi)  
+
+# Children
+# Frequency count for children
+table(data$children)
+# Bar plot of children
+barplot(table(data$children))  
+
+# Smoker
+# Frequency count for smoker
+table(data$smoker)
+print("Most of the people are not somking")
+# Pie chart of smoker
+pie(table(data$smoker))  
+
+# Region
+# Frequency count for region
+table(data$region)  
+# Bar plot of region
+barplot(table(data$region))  
+print("SouthWest people are more")
+# Charges
+# Summary statistics for charges
+summary(data$charges)  
+# Boxplot of charges
+boxplot(data$charges)
+
+
+#diagnostic Analysis
+library(ggplot2)
+
+# Scatter plots of numeric variables
+ggplot(data, aes(x = age, y = charges)) + geom_point()  
+ggplot(data, aes(x = bmi, y = charges)) + geom_point()   
+
+# Bar plot of categorical variables
+ggplot(data, aes(x = sex, fill = smoker)) + geom_bar()  
+
+#Check for outliers
+# Boxplots of numeric variables
+boxplot(data$age, data$bmi, data$charges)
+boxplot(data$charges, data$bmi, data$charges)  
+
+# Q-Q plots of numeric variables
+qqnorm(data$charges)
+print("quorum graph for charges")
+
+
+#Correlation 
+# Create a subset of the numeric variables
+numeric_data <- data[, c("age", "bmi", "charges")]
+
+# Calculate correlation matrix
+correlation_matrix <- cor(numeric_data)
+
+# Print the correlation matrix
+print(correlation_matrix)
+
+# Correlation plot
+  
+library(corrplot)
+
+corrplot(correlation_matrix, method = "circle")
+
+library(car)
+numeric_vars <- c("age", "bmi", "charges")  
+
+# Create a subset of the numeric variables
+numeric_data <- data[, numeric_vars]
+
+# Calculate VIF for Multicollinearity
+vif_results <- vif(lm(data = numeric_data))
+print(vif_results)
+
+#autocorrelation
+
+library(lmtest)
+# Split the dataset into predictor variables (X) and the target variable (Y)
+X <- data[, c("age", "sex", "bmi", "children", "smoker", "region")]
+Y <- data$charges
+
+
+#linear regression
+model <- lm(charges ~ age + sex + bmi + children + smoker + region, data = data)
+coefficients <- coef(model)
+intercept <- coefficients[1]
+regression_equation <- paste("charges =", round(intercept, 2), "+", round(coefficients[-1], 2))
+print(regression_equation)
+
+
+
+#Variance Inflation Factor (VIF) 
+library(car)
+vif(model)
+
+ggplot(data = data, aes(x = fitted(model), y = residuals(model))) +
+  geom_point() +
+  labs(x = "Fitted Values", y = "Residuals")
+print("Interpretation:The scatter plot shows a strong positive correlation between the number of residents and the number of fitted values, indicating that larger cities tend to have more fitted values.")
+
+# Linearity check
+scatter_plots <- ggplot(data, aes(x = age, y = charges)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+print(scatter_plots)
+# Repeat the above two lines for bmi and children
+
+# Normality check - Shapiro-Wilk test
+shapiro_test <- shapiro.test(residuals(lm(charges ~ age + bmi + children, data = data)))
+print(shapiro_test)
+
+# Normality check - Histogram and Q-Q plot
+histogram <- hist(residuals(lm(charges ~ age + bmi + children, data = data)), breaks = 20)
+qqplot <- qqnorm(residuals(lm(charges ~ age + bmi + children, data = data)))
+print(histogram)
+print(qqplot)
+
+# Homoscedasticity check - Residuals vs. Fitted values plot
+scatter_plot <- plot(lm(charges ~ age + bmi + children, data = data))
+print(scatter_plot)
+
+# Homoscedasticity check - Breusch-Pagan test
+bp_test <- bptest(residuals(lm(charges ~ age + bmi + children, data = data)) ~ fitted(lm(charges ~ age + bmi + children, data = data)))
+print(bp_test)
+
+var_residuals <- var(resid(model))
+var_residuals
+
+#autocorrelation n
+library(lmtest)
+#Durbin-Watson test
+dwtest(model)
+print("Interpretation:the conclusion is that there is no evidence of autocorrelation in the residuals of your linear regression model.")
+
+# Predict the target variable using the linear regression model
+predicted <- predict(model, newdata = data)
+
+# Calculate the mean absolute error (MAE)
+mae <- mean(abs(predicted - Y))
+print(mae)
+
+# Calculate the mean squared error (MSE)
+mse <- mean((predicted - Y)^2)
+print(mse)
+
+# Calculate the root mean squared error (RMSE)
+rmse <- sqrt(mse)
+print(rmse)
+
+# Calculate the R-squared
+rsquared <- summary(model)$r.squared
+print(rsquared)
+
+# Calculate the adjusted R-squared
+n <- length(Y)
+p <- length(model$coefficients)
+adj_rsquared <- 1 - (1 - rsquared) * ((n - 1) / (n - p - 1))
+print(adj_rsquared)
+
+```
+
